@@ -1,6 +1,20 @@
 import pygame
 
 from numpy.random import uniform
+import numpy as np
+
+SPRITE_SIZE_X = 32
+SPRITE_SIZE_Y = 32
+
+STEP_SIZE  = 8
+STEP_LEFT  = np.array( ( -1, 0 ) ) * STEP_SIZE
+STEP_RIGHT = np.array( ( +1, 0 ) ) * STEP_SIZE
+STEP_UP    = np.array( (  0,-1 ) ) * STEP_SIZE
+STEP_DOWN  = np.array( (  0,+1 ) ) * STEP_SIZE
+STEP_LEFT_TUPLE  = tuple( STEP_LEFT.tolist() )
+STEP_RIGHT_TUPLE = tuple( STEP_RIGHT.tolist() )
+STEP_UP_TUPLE    = tuple( STEP_UP.tolist() )
+STEP_DOWN_TUPLE  = tuple( STEP_DOWN.tolist() )
 
 class CSEffect:
     """
@@ -162,25 +176,62 @@ class CSCharacter:
                   name='',
                   inventory=[],
                   creatures=[],
-                  position=[ 0.,0. ],
+                  position=np.array( ( 0.,0. ) ),
                   direction=0,
                   behavior=None,
                   statistics=None,
                   dialogue=None,
-                  sprite_file=''
+                  sprite_file='',
+                  sprite_number=0
                 ):
         self.name = name            # character's name, if any, str
         self.inventory = inventory  # character's inventory, list
         self.creatures = creatures  # character's creatures, list
-        self.position = list( position )    # character's position, tuple of floats
-        self.direction = 0          # character's direction, int in [0,4)
+        self.position = np.array( position )    # character's position, array
+        self.direction = 3          # character's direction, int in [0,4)
         self.behavior = behavior    # character's behavior, class CSBehaviorPattern
         self.statistics = statistics# character's statistics, dict
         self.dialogue = dialogue    # character's dialogue tree, class CSDialogue
+
         self.sprite_file = sprite_file  # character's sprite file, str
-        self.sprite = pygame.image.load( self.sprite_file )
+        self.sprites = []
+        self.facing = { STEP_LEFT_TUPLE  : 2,  # left
+                        STEP_RIGHT_TUPLE : 3,  # right
+                        STEP_UP_TUPLE    : 0,  # backwards
+                        STEP_DOWN_TUPLE  : 1   # forwards
+                      }
+        self.loadSprites( sprite_file,sprite_number )
+
+        self.sprite = None
         self.sprite_frame = 0       # current sprite frame
         self.sprite_next  = 0       # next sprite frame (if nothing changes)
+        self.update()
+
+    def loadSprites( self,sprite_file,sprite_number ):
+        img = pygame.image.load( sprite_file )
+        offset_x = sprite_number * SPRITE_SIZE_X * 3
+        offset_y = 0
+        self.sprites = []
+        # should be 4 directional sprites, 4 frames (if flipped)
+        for direction in ( 3,0,1,2 ):
+            dir_sprites = []
+            for stage in range( 4 ):
+                xmin = stage * SPRITE_SIZE_X + offset_x
+                ymin = direction * SPRITE_SIZE_Y + offset_y
+
+                if stage == 3:
+                    stage_sprite = dir_sprites[ 1 ]
+                else:
+                    rect = pygame.Rect( xmin,ymin,SPRITE_SIZE_X,SPRITE_SIZE_Y )
+                    stage_sprite = img.subsurface( ( rect ) )
+                dir_sprites.append( stage_sprite )
+            self.sprites.append( dir_sprites )
+
+    def update( self ):
+        self.sprite = self.sprites[ self.direction ][ self.sprite_frame ]
+
+        self.sprite_frame = self.sprite_next
+        self.sprite_next = ( self.sprite_next + 1 ) % 4
 
 def main( ):
     """

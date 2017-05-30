@@ -1,10 +1,16 @@
 TODO:
 
 - set up map
-    - negative tile IDs are impassable
     - camera/view updates independently of motion and map
+    - multiple layers?
+        background, basement, foreground, character, upper
+    - switch to four-element square mask for each (as hex code)
 - set up sprites
+    - standard layout of scenes, ids by direction
+    - oversized/multi-tile sprites?
+    - tileset per map
+    - starting coords for PC per map
 - set up CSEffect class
 - set up CSDialogue class
 - set up CSBehaviorPattern class
-- set up main game loop (in pygame) => Junk Jungle
+- profile to optimize

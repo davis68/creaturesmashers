@@ -3,9 +3,6 @@ from pygame import Surface
 
 from CSClasses import *
 
-SPRITE_SIZE_X = 32
-SPRITE_SIZE_Y = 32
-
 class CSSprite:
     def __init__( self ):
         pass
@@ -30,13 +27,26 @@ class CSMap:
         self.initSurface()
 
     def loadMap( self ):
-        self.matrix = np.loadtxt( open( self.source, 'r' ),delimiter=',',dtype=np.int32 )
-        self.mask   = self.parseMapToMask()
+        self.matrix = np.loadtxt( open( self.source, 'r' ),delimiter=',',dtype=np.int32 ).T
+        self.parseMapToMask()
 
     def parseMapToMask( self ):
-        pass
-        # negative values are impassable, and have to look up active sites
-        #TODO
+        '''
+        Convert the map values to a mask, used to determine where the PC can go.
+
+        From the map, negative values are impassable, and active sites are
+        indicated by the tile type.
+
+        On the mask, 1 is passable, 0 is impassable, 2 is active.
+        '''
+        self.mask = np.ones_like( self.matrix )
+
+        for i in range( self.matrix.shape[ 0 ] ):
+            for j in range( self.matrix.shape[ 1 ] ):
+                if self.matrix[ i,j ] < 0:
+                    self.mask[ i,j ] = 0
+                if self.matrix[ i,j ] == 0:  # a door XXX change this to lookup
+                    self.mask[ i,j ] = 2
 
     def initSurface( self ):
         xdim,ydim   = self.matrix.shape             # overall map size, in tiles
@@ -44,7 +54,7 @@ class CSMap:
         self.surface = Surface( ( xdim*xsize,ydim*ysize ) )
 
         for i in range( self.matrix.shape[ 0 ] ):
-            for j in range( self.matrix.shape[ 0 ] ):
+            for j in range( self.matrix.shape[ 1 ] ):
                 offset_x = i*SPRITE_SIZE_X
                 offset_y = j*SPRITE_SIZE_Y
                 self.surface.blit( self.tiles[ np.abs( self.matrix[ i,j ] ) ],( offset_x,offset_y ) )
@@ -53,6 +63,14 @@ class CSMap:
         self.tiles = []
         for i in range( np.max( np.abs( self.matrix ) ) + 1 ):
             self.tiles.append( pygame.image.load( 'tile-%i.png'%i ) )
+
+    def renderScene( self ):
+        for i in range( self.matrix.shape[ 0 ] ):
+            for j in range( self.matrix.shape[ 0 ] ):
+                offset_x = i*SPRITE_SIZE_X
+                offset_y = j*SPRITE_SIZE_Y
+                self.surface.blit( self.tiles[ np.abs( self.matrix[ i,j ] ) ],( offset_x,offset_y ) )
+
 
 class SceneBase:
     '''
@@ -77,31 +95,53 @@ class SceneBase:
         self.switchToScene( None )
 
 class CSScene( SceneBase ):
-    def __init__( self ):
+    def __init__( self,
+                  map_file='map-0.csv',
+                  start_coords=( 224,448 )
+                ):
         self.next = self
         #TODO: set starting point for map, initial configuration
         # A scene has a map, an event mask, and characters.
-        self.pc = CSCharacter( sprite_file='character.png',position=( 100,100 ) )
-        self.map = CSMap( id=0,source='map-0.csv' )
+        self.pc = CSCharacter( sprite_file='sprite-base.png',sprite_number=7,position=start_coords )
+        self.map = CSMap( id=0,source=map_file )
         self.screen = pygame.display.set_mode( self.map.surface.get_size() )
+        self.target_motion = np.array( ( 0,0 ) )
         self.time = 0
 
     def processInput( self,events,pressed_keys ):
         for event in events:
             if pressed_keys[ pygame.K_LEFT ]:
-                self.pc.position[ 0 ] -= 1
+                self.target_motion += STEP_LEFT
+                self.pc.direction = self.pc.facing[ STEP_LEFT_TUPLE ]
             if pressed_keys[ pygame.K_RIGHT ]:
-                self.pc.position[ 0 ] += 1
+                self.target_motion += STEP_RIGHT
+                self.pc.direction = self.pc.facing[ STEP_RIGHT_TUPLE ]
             if pressed_keys[ pygame.K_UP ]:
-                self.pc.position[ 1 ] -= 1
+                self.target_motion += STEP_UP
+                self.pc.direction = self.pc.facing[ STEP_UP_TUPLE ]
             if pressed_keys[ pygame.K_DOWN ]:
-                self.pc.position[ 1 ] += 1
+                self.target_motion += STEP_DOWN
+                self.pc.direction = self.pc.facing[ STEP_DOWN_TUPLE ]
 
     def update( self ):
-        char_x = self.pc.position[ 0 ] #+32*np.cos( self.time ) + 300
-        char_y = self.pc.position[ 1 ] #+32*np.sin( self.time ) + 300
+        self.map.renderScene()  #TODO:camera view
+
+        # Check for collisions with the mask.
+        target = self.pc.position + self.target_motion
+        if self.map.mask[ int( ( target[ 0 ] + SPRITE_SIZE_X*0.5 ) / SPRITE_SIZE_X ),int( ( target[ 1 ] + SPRITE_SIZE_Y*0.5 ) / SPRITE_SIZE_Y ) ] == 0:
+            target = self.pc.position
+        if self.map.mask[ int( ( target[ 0 ] + SPRITE_SIZE_X*0.5 ) / SPRITE_SIZE_X ),int( ( target[ 1 ] + SPRITE_SIZE_Y*0.5 ) / SPRITE_SIZE_Y ) ] == 2:
+            next_scene = CSScene( map_file='map-1.csv' )
+            self.next = next_scene
+        self.pc.position = target
+        self.pc.update()
+
+        char_x = self.pc.position[ 0 ]
+        char_y = self.pc.position[ 1 ]
         self.time += np.pi/180
         self.map.surface.blit( self.pc.sprite,( char_x,char_y ) )
+
+        self.target_motion = np.array( ( 0,0 ) )
 
     def render( self ):
         self.screen.fill( ( 0,0,0 ) )
@@ -122,8 +162,8 @@ def game_loop( starting_scene ):
             if event.type == pygame.QUIT:
                 quit_attempt = True
             elif event.type == pygame.KEYDOWN:
-                alt_pressed = pressed_keys[pygame.K_LALT] or \
-                              pressed_keys[pygame.K_RALT]
+                alt_pressed = pressed_keys[ pygame.K_LALT ] or \
+                              pressed_keys[ pygame.K_RALT ]
                 if event.key == pygame.K_ESCAPE:
                     quit_attempt = True
                 elif event.key == pygame.K_F4 and alt_pressed:
@@ -145,7 +185,7 @@ def game_loop( starting_scene ):
 
 
 def main():
-    base_scene = CSScene()
+    base_scene = CSScene( start_coords=( 100,100 ) )
     pygame.init()
     game_loop( base_scene )
     pygame.quit()
