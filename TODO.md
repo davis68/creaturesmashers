@@ -7,6 +7,7 @@ TODO:
     - switch to four-element square mask for each (as hex code)
     - combine/transition tiles on map or automatically on load?
 - set up menus
+    - make them load from config files or string tables
 - set up combat
 - set up sprites
     - oversized/multi-tile sprites?
