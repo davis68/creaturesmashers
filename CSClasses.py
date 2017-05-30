@@ -235,7 +235,6 @@ class CSCharacter:
         # Update sprite on movement, not continously.
         if self.moved:
             self.sprite_next = ( self.sprite_next + 1 ) % 4
-            self.moved = False
 
 def main():
     """

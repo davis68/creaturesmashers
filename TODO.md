@@ -5,6 +5,9 @@ TODO:
     - multiple layers?
         background, basement, foreground, character, upper
     - switch to four-element square mask for each (as hex code)
+    - combine/transition tiles on map or automatically on load?
+- set up menus
+- set up combat
 - set up sprites
     - oversized/multi-tile sprites?
     - tileset per map
