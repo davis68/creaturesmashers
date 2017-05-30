@@ -2,55 +2,6 @@ import pygame
 
 from numpy.random import uniform
 
-"""
-    Evolution is stored as a dictionary of levels mapped to tuples containing the likelihood and target.
-
-    The dictionary may be generated ahead of time or modified on-the-fly.
-    Note that evolution happens when leveling up.  In other words, if you instantiate a creature at a higher level than it usually would be, it will not automatically level up but will continue with its current form.  If you do not desire this behavior, you should start the creature as its evolved form at the appropriate level.
-    
-    For a creature that has a single evolutionary result with likelihood 100% at level 8:
-        { 8: ( ( 1.0,'gryphon' ) ) }
-
-    For a creature with a gradually increasing likelihood of evolution along a single evolutionary line:
-        { 1: ( ( 0.1,'sylph' ) ), 2:( ( 0.2,'sylph' ) ), 3:( ( 0.3,'sylph' ) ) }
-        # etc.
-
-    For a creature with two possible paths at a certain stage:
-        { 5: ( ( 0.25,'air golem' ),( 0.75,'earth golem' ) ) }
-
-    Note that the probabilities should not sum to more than 100%.
-
-    Q: is it better to store by type and likelihood, or by level then likelihood then type?
-"""
-
-"""
-The psychosomatic statistics of the creature are stored as a dictionary
-containing the fields:
-
-    realHealth: int  # current hit points
-    maxHealth: int   # maximum hit points (including any modifiers)
-    realPower: int   # current power level
-    maxPower: int    # maximum power level (including any modifiers)
-    status: list     # status modifiers, such as 'enchanted' or 'asleep'
-    attack: int      # attack level (including any modifiers)
-    defence: int     # defence level (including any modifiers)
-    modifiers: dict  # currently active modifiers, listed as a dictionary
-                     # mapping statistic name to value
-    effects: dict    # currently active effects, listed as a dictionary
-                     # mapping effect name to class CSEffect
-"""
-
-statistics = { 'realHealth':0,
-               'maxHealth':0,
-               'realPower':0,
-               'maxPower':0,
-               'status':None,
-               'attack':0,
-               'defence':0,
-               'modifiers':{},
-               'effects':{}
-	     }
-
 class CSEffect:
     """
     Stub for CSEffect class.
@@ -80,8 +31,9 @@ def loadEvolution( configFile ):
     from os.path import join
     configPath = join( getcwd(),configFile )
     with open( configPath,'r' ) as configFile:
-        exec( "data=%s"%configFile.read().strip() )
-	#XXX yes, this needs to be parsed and secured
+        datastr = configFile.read().strip()
+        data = eval( datastr )
+    #XXX yes, this needs to be parsed and secured, maybe pickled and hashed
     return data
 
 from copy import deepcopy
@@ -107,82 +59,99 @@ class CSCreature:
     """
 
     def __init__( self,
-                  name='',
                   kind=[],
                   elements=[],
-                  level=0,
-                  exp=0,
                   evolution=None,
                   statistics=None,
                   abilities={}
                 ):
-        self.name = name            # creature's name, if any, str
         self.kind = kind            # creature's kind, str
         self.elements = elements    # creature's associated elements, list
-        self.level = level          # creature's level, int
-        self.exp = exp              # creature's accumulated experience, int
         self.evolution = evolution  # creature's evolution characteristics, dict
-        self.statistics = statistics        # creature's statistics, dict
+        self.statistics = statistics# creature's statistics, dict
         self.abilities = abilities  # creature's abilities, dict
 
     def __repr__( self ):
-        outstr = "CSCreature( name='%s',kind=%s,elements=%s,level=%i,exp=%i,evolution=%s,statistics=%s,abilities=%s )"%( self.name,self.kind,self.elements,self.level,self.exp,self.evolution,self.statistics,self.abilities )
+        outstr = "CSCreature( kind=%s,elements=%s,evolution=%s,statistics=%s,abilities=%s )"%( self.kind,self.elements,self.evolution,self.statistics,self.abilities )
         return outstr
 
-    def levelUp( self ):
+    def increaseExp( self,xp ):
         '''
-        Increase the creature's level, including checking for evolution.
-        
-        Returns a tuple indicating whether evolution should occur, and,
-        if so, the target kind.
+        Increase the accumulated XP for this creature, including checking
+        for leveling-up and evolution.
         '''
-        self.level += 1
-	
-	# Update statistics.
-	self.statistics[ 'maxHealth' ] += 5  #XXX
-	self.statistics[ 'maxPower' ] += 5   #XXX
-	self.statistics[ 'realHealth' ] = self.statistics[ 'maxHealth' ]
-	self.statistics[ 'realPower' ] = self.statistics[ 'maxPower' ]
+        self.statistics[ 'exp' ] += xp
+        self.checkLevelUp()
+        self.checkEvolution()
 
+    def checkLevelUp( self ):
+        '''
+        Check for leveling up, if the accumulated XP are high enough.
+        '''
+        xps = [ 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155 ]
+        from numpy import cumsum
+        xps_cum = cumsum( xps )
+        levels = {}
+        for level in range( len( xps ) ):
+            levels[ level ] = xps_cum[ level ]
+
+        if self.statistics[ 'exp' ] >= levels[ self.statistics[ 'level' ]+1 ]:
+            # possibly multiple level-ups if a solid battle, esp. early on
+            # XXX: it is possible to level up twice and skip a possible
+            # evolution if the evolution tree is poorly designed!
+            lvl = self.statistics[ 'level' ] + 1
+            while self.statistics[ 'exp' ] >= levels[ lvl ]:
+                lvl += 1
+            self.levelUp( lvl )
+
+    def levelUp( self,targetLevel ):
+        '''
+        Increase the creature's level.
+        '''
+        self.statistics[ 'level' ] = targetLevel
+
+        # Update statistics.
+        self.statistics[ 'maxHealth' ] += 5  #XXX
+        self.statistics[ 'maxPower' ] += 5   #XXX
+        self.statistics[ 'realHealth' ] = self.statistics[ 'maxHealth' ]
+        self.statistics[ 'realPower' ] = self.statistics[ 'maxPower' ]
+
+    def checkEvolution( self ):
+        '''
+        Check for evolution.
+        '''
         # Check for evolution.
-        if self.level in self.evolution:
+        if self.statistics[ 'level' ] in self.evolution:
             # Short-circuit test:
-            if self.evolution[ self.level ][ 0 ] >= 1.0:
-                return ( True,self.evolution[ self.level ][ -1 ] )
+            if self.evolution[ self.statistics[ 'level' ] ][ 0 ][ 0 ] >= 1.0:
+                self.evolve( self.evolution[ self.statistics[ 'level' ] ][ 0 ][ -1 ] )
 
             # Regular test:
-            for path in self.evolution[ self.level ]:
+            for path in self.evolution[ self.statistics[ 'level' ] ]:
                 prob = uniform()
                 if prob < path[ 0 ]:
-                    return ( True,path[ -1 ] )
-
-        return ( False,None )  # no evolution occurs
+                    self.evolve( path[ -1 ] )
 
     def evolve( self,target ):
         '''
         Change the creature's kind to the target evolution.
 
-        Leveling up is a separate process, which would typically be handled first.
-
-        Returns a new CSCreature which should replace the former creature.
+        Leveling up is a separate process, which would typically be handled
+        beforehand.
         '''
         try:
             targetEvolvedCreature = findEvolution( target )
         except:
-            return None
-            #XXX should handle this case more elegantly
+            pass
+            #XXX should handle this case more elegantly, TargetNotFoundException
+            # or at least a warning
 
-        targetCreature = CSCreature( name=self.name,
-                                     kind=targetEvolvedCreature.kind,
-                                     elements=targetEvolvedCreature.element,
-                                     level=self.level,
-                                     exp=self.exp,
-                                     evolution=targetEvolvedCreature.evolution,
-                                     statistics=self.statistics,
-                                     abilities=targetEvolvedCreature.abilities
-                                   )
-                                   #XXX do abilities inherit? abilitiesUnion?
-        return targetCreature
+        self.kind = targetEvolvedCreature.kind
+        self.elements = targetEvolvedCreature.elements
+        self.evolution = targetEvolvedCreature.evolution
+        #self.statistics = self.statistics
+        self.abilities = targetEvolvedCreature.abilities
+        #XXX do abilities inherit? abilitiesUnion?
 
 class CSCharacter:
     """
@@ -193,28 +162,110 @@ class CSCharacter:
                   name='',
                   inventory=[],
                   creatures=[],
-                  position=( 0.,0. ),
+                  position=[ 0.,0. ],
                   direction=0,
                   behavior=None,
                   statistics=None,
                   dialogue=None,
-                  sprite=''
+                  sprite_file=''
                 ):
         self.name = name            # character's name, if any, str
         self.inventory = inventory  # character's inventory, list
         self.creatures = creatures  # character's creatures, list
-        self.position = position    # character's position, tuple of floats
+        self.position = list( position )    # character's position, tuple of floats
         self.direction = 0          # character's direction, int in [0,4)
         self.behavior = behavior    # character's behavior, class CSBehaviorPattern
         self.statistics = statistics# character's statistics, dict
         self.dialogue = dialogue    # character's dialogue tree, class CSDialogue
-        self.sprite = sprite        # character's sprite file, str
+        self.sprite_file = sprite_file  # character's sprite file, str
+        self.sprite = pygame.image.load( self.sprite_file )
+        self.sprite_frame = 0       # current sprite frame
+        self.sprite_next  = 0       # next sprite frame (if nothing changes)
 
 def main( ):
     """
     Test instantiations.
     """
-    pass
+
+    """
+        Evolution is stored as a dictionary of levels mapped to tuples containing the likelihood and target.
+
+        The dictionary may be generated ahead of time or modified on-the-fly.
+        Note that evolution happens when leveling up.  In other words, if you
+        instantiate a creature at a higher level than it usually would be, it
+        will not automatically level up but will continue with its current
+        form.  If you do not desire this behavior, you should start the
+        creature as its evolved form at the appropriate level.
+
+        For a creature that has a single evolutionary result with likelihood 100% at level 8:
+            { 8: ( ( 1.0,'gryphon' ) ) }
+
+        For a creature with a gradually increasing likelihood of evolution along a single evolutionary line:
+            { 1: ( ( 0.1,'sylph' ) ), 2:( ( 0.2,'sylph' ) ), 3:( ( 0.3,'sylph' ) ) }
+            # etc.
+
+        For a creature with two possible paths at a certain stage:
+            { 5: ( ( 0.25,'air golem' ),( 1.0,'earth golem' ) ) }
+
+        Note that the probabilities should not sum to more than 100%.
+        Also note that the probabilities should be _cumulative_---that is,
+        the probability range should be increasing.  The following represents
+        a 1/3 likelihood of evolving to each of three types:
+            { 5: ( ( 0.33,'death kite' ),( 0.67,'turkey vulture' ),( 1.0,'peregrine falcon' ) ) }
+    """
+    print( findEvolution( 'liger' ) )
+    print( findEvolution( 'gryphon' ) )
+    print( findEvolution( 'lamia' ) )
+
+    """
+    The psychosomatic statistics of the creature are stored as a dictionary
+    containing the fields:
+
+        realHealth: int  # current hit points
+        maxHealth: int   # maximum hit points (including any modifiers)
+        realPower: int   # current power level
+        maxPower: int    # maximum power level (including any modifiers)
+        status: list     # status modifiers, such as 'enchanted' or 'asleep'
+        attack: int      # attack level (including any modifiers)
+        defence: int     # defence level (including any modifiers)
+        modifiers: dict  # currently active modifiers, listed as a dictionary
+                         # mapping statistic name to value
+        effects: dict    # currently active effects, listed as a dictionary
+                         # mapping effect name to class CSEffect
+    """
+
+    empty_statistics = { 'name': '',
+                         'exp': 0,
+                         'level': 0,
+                         'realHealth':0,
+                         'maxHealth':0,
+                         'realPower':0,
+                         'maxPower':0,
+                         'status':None,
+                         'attack':0,
+                         'defence':0,
+                         'modifiers':{},
+                         'effects':{}
+                       }
+
+    skeleton_statistics = { 'name': 'Skelly',
+                            'exp': 0,
+                            'level': 0,
+                            'realHealth':10,
+                            'maxHealth':10,
+                            'realPower':5,
+                            'maxPower':5,
+                            'status':None,
+                            'attack':2,
+                            'defence':1,
+                            'modifiers':{},
+                            'effects':{}
+                          }
+    skeleton = CSCreature( kind=['skeleton'],elements=['bone'],evolution={ 1:( ( 0.5,'skeleton knight' ), ),2:( ( 1.0,'skeleton knight' ), ) },statistics=skeleton_statistics,abilities={} )
+    print( skeleton )
+
+    skeleton.increaseExp( 1 )
+    print( skeleton )
 
 if __name__ == '__main__':
     main()

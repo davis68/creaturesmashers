@@ -1,0 +1,6 @@
+{'gryphon': CSCreature( kind=['gryphon'],elements=['air'],evolution={ 10: ( ( 1.0,'lamia' ), ) },statistics=None,abilities={ } ),
+ 'lamia': CSCreature( kind=['lamia'],elements=['air'],evolution={},statistics=None,abilities={} ),
+ 'liger': CSCreature( kind=['liger'],elements=['jungle'],evolution={8: ( (1.0, 'gryphon'), )},statistics=None,abilities={} ),
+ 'skeleton': CSCreature( kind=['skeleton'],elements=['bone'],evolution={1: ((0.5, 'skeleton knight'),), 2: ((1.0, 'skeleton knight'),)},statistics={'realHealth': 10, 'maxHealth': 10, 'realPower': 5, 'maxPower': 5, 'status': None, 'attack': 2, 'defence': 1, 'modifiers': {}, 'effects': {}},abilities={} ),
+ 'skeleton knight': CSCreature( kind=['skeleton knight'],elements=['bone'],evolution={1: ((0.5, 'skeleton knight'),), 2: ((1.0, 'skeleton knight'),)},statistics={'realHealth': 20, 'maxHealth': 20, 'realPower': 15, 'maxPower': 15, 'status': None, 'attack': 2, 'defence': 1, 'modifiers': {}, 'effects': {}},abilities={} )
+}
