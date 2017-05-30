@@ -242,30 +242,30 @@ def main():
     """
 
     """
-        Evolution is stored as a dictionary of levels mapped to tuples containing the likelihood and target.
+    Evolution is stored as a dictionary of levels mapped to tuples containing the likelihood and target.
 
-        The dictionary may be generated ahead of time or modified on-the-fly.
-        Note that evolution happens when leveling up.  In other words, if you
-        instantiate a creature at a higher level than it usually would be, it
-        will not automatically level up but will continue with its current
-        form.  If you do not desire this behavior, you should start the
-        creature as its evolved form at the appropriate level.
+    The dictionary may be generated ahead of time or modified on-the-fly.
+    Note that evolution happens when leveling up.  In other words, if you
+    instantiate a creature at a higher level than it usually would be, it
+    will not automatically level up but will continue with its current
+    form.  If you do not desire this behavior, you should start the
+    creature as its evolved form at the appropriate level.
 
-        For a creature that has a single evolutionary result with likelihood 100% at level 8:
-            { 8: ( ( 1.0,'gryphon' ) ) }
+    For a creature that has a single evolutionary result with likelihood 100% at level 8:
+        { 8: ( ( 1.0,'gryphon' ) ) }
 
-        For a creature with a gradually increasing likelihood of evolution along a single evolutionary line:
-            { 1: ( ( 0.1,'sylph' ) ), 2:( ( 0.2,'sylph' ) ), 3:( ( 0.3,'sylph' ) ) }
-            # etc.
+    For a creature with a gradually increasing likelihood of evolution along a single evolutionary line:
+        { 1: ( ( 0.1,'sylph' ) ), 2:( ( 0.2,'sylph' ) ), 3:( ( 0.3,'sylph' ) ) }
+        # etc.
 
-        For a creature with two possible paths at a certain stage:
-            { 5: ( ( 0.25,'air golem' ),( 1.0,'earth golem' ) ) }
+    For a creature with two possible paths at a certain stage:
+        { 5: ( ( 0.25,'air golem' ),( 1.0,'earth golem' ) ) }
 
-        Note that the probabilities should not sum to more than 100%.
-        Also note that the probabilities should be _cumulative_---that is,
-        the probability range should be increasing.  The following represents
-        a 1/3 likelihood of evolving to each of three types:
-            { 5: ( ( 0.33,'death kite' ),( 0.67,'turkey vulture' ),( 1.0,'peregrine falcon' ) ) }
+    Note that the probabilities should not sum to more than 100%.
+    Also note that the probabilities should be _cumulative_---that is,
+    the probability range should be increasing.  The following represents
+    a 1/3 likelihood of evolving to each of three types:
+        { 5: ( ( 0.33,'death kite' ),( 0.67,'turkey vulture' ),( 1.0,'peregrine falcon' ) ) }
     """
     print( findEvolution( 'liger' ) )
     print( findEvolution( 'gryphon' ) )

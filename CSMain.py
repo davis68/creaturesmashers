@@ -183,6 +183,18 @@ class CSScene( SceneBase ):
             self.pc.moved = False
             self.target_motion = np.array( ( 0,0 ) )
 
+            '''
+            #Keep player on the screen
+            if self.rect.left < 0:
+                self.rect.left = 0
+            elif self.rect.right > 800:
+                self.rect.right = 800
+            if self.rect.top <= 0:
+                self.rect.top = 0
+            elif self.rect.bottom >= 600:
+                self.rect.bottom = 600
+            '''
+
         elif self.ui == 'menu':
             # draw the menu based on its current state
             self.menu_surface = pygame.Surface( ( 512,512 ), pygame.SRCALPHA, 32 )
