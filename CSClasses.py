@@ -205,6 +205,7 @@ class CSCharacter:
         self.sprite = None
         self.sprite_frame = 0       # current sprite frame
         self.sprite_next  = 0       # next sprite frame (if nothing changes)
+        self.moved = False
         self.update()
 
     def loadSprites( self,sprite_file,sprite_number ):
@@ -229,11 +230,14 @@ class CSCharacter:
 
     def update( self ):
         self.sprite = self.sprites[ self.direction ][ self.sprite_frame ]
-
         self.sprite_frame = self.sprite_next
-        self.sprite_next = ( self.sprite_next + 1 ) % 4
 
-def main( ):
+        # Update sprite on movement, not continously.
+        if self.moved:
+            self.sprite_next = ( self.sprite_next + 1 ) % 4
+            self.moved = False
+
+def main():
     """
     Test instantiations.
     """

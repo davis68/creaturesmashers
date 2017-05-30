@@ -6,7 +6,6 @@ TODO:
         background, basement, foreground, character, upper
     - switch to four-element square mask for each (as hex code)
 - set up sprites
-    - standard layout of scenes, ids by direction
     - oversized/multi-tile sprites?
     - tileset per map
     - starting coords for PC per map

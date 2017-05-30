@@ -113,15 +113,19 @@ class CSScene( SceneBase ):
             if pressed_keys[ pygame.K_LEFT ]:
                 self.target_motion += STEP_LEFT
                 self.pc.direction = self.pc.facing[ STEP_LEFT_TUPLE ]
+                self.pc.moved = True
             if pressed_keys[ pygame.K_RIGHT ]:
                 self.target_motion += STEP_RIGHT
                 self.pc.direction = self.pc.facing[ STEP_RIGHT_TUPLE ]
+                self.pc.moved = True
             if pressed_keys[ pygame.K_UP ]:
                 self.target_motion += STEP_UP
                 self.pc.direction = self.pc.facing[ STEP_UP_TUPLE ]
+                self.pc.moved = True
             if pressed_keys[ pygame.K_DOWN ]:
                 self.target_motion += STEP_DOWN
                 self.pc.direction = self.pc.facing[ STEP_DOWN_TUPLE ]
+                self.pc.moved = True
 
     def update( self ):
         self.map.renderScene()  #TODO:camera view
