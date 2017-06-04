@@ -179,7 +179,7 @@ class CSCharacter:
                   position=np.array( ( 0.,0. ) ),
                   direction=0,
                   behavior=None,
-                  statistics=None,
+                  #statistics=None,
                   dialogue=None,
                   sprite_file='',
                   sprite_number=0
@@ -190,8 +190,9 @@ class CSCharacter:
         self.position = np.array( position )    # character's position, array
         self.direction = 3          # character's direction, int in [0,4)
         self.behavior = behavior    # character's behavior, class CSBehaviorPattern
-        self.statistics = statistics# character's statistics, dict
+        #self.statistics = statistics# character's statistics, dict
         self.dialogue = dialogue    # character's dialogue tree, class CSDialogue
+        self.sprite_number = sprite_number
 
         self.sprite_file = sprite_file  # character's sprite file, str
         self.sprites = []
@@ -207,6 +208,10 @@ class CSCharacter:
         self.sprite_next  = 0       # next sprite frame (if nothing changes)
         self.moved = False
         self.update()
+
+    def __repr__( self ):
+        outstr = "CSCharacter( name='%s',inventory=%s,creatures=%s,position=%s,direction=%i,behavior=%s,dialogue=%s,sprite_file='%s',sprite_number=%i )"%( self.name,self.inventory,self.creatures,repr(self.position),self.direction,self.behavior,self.dialogue,self.sprite_file,self.sprite_number )
+        return outstr
 
     def loadSprites( self,sprite_file,sprite_number ):
         img = pygame.image.load( sprite_file )
@@ -320,6 +325,24 @@ def main():
 
     skeleton.increaseExp( 1 )
     print( skeleton )
+
+    '''
+    self,
+    name='',
+    inventory=[],
+    creatures=[],
+    position=np.array( ( 0.,0. ) ),
+    direction=0,
+    behavior=None,
+    statistics=None,
+    dialogue=None,
+    sprite_file='',
+    sprite_number=0
+    '''
+    pc_statistics = {}
+
+    pc = CSCharacter( name='Erland',creatures=[ skeleton,skeleton ],position=np.array( ( 100.,100. ) ),direction=2,sprite_file='sprite-base.png',sprite_number=0 )
+    print( pc )
 
 if __name__ == '__main__':
     main()
