@@ -41,22 +41,13 @@ class CSScene( SceneBase ):
                 ):
         self.next = self
         #TODO: set starting point for map, initial configuration
-        # A scene has a map, an event mask, and characters.
+
         global pc
         self.map = CSMap( id=0,source=map_file )
-        #print( start_coords )
         if start_coords is not None:
             start_coords = np.array( start_coords )
         else:
             start_coords = self.map.portal_coords[ portal_id ]
-            #coord_offset = { 0:np.array( (  0.5*SPRITE_SIZE_X,0 ) ,dtype=np.int64),
-                             #1:np.array( ( -0.5*SPRITE_SIZE_X,0 ),dtype=np.int64 ),
-                             #2:np.array( ( 0, 0.5*SPRITE_SIZE_Y ),dtype=np.int64 ),
-                             #3:np.array( ( 0,-0.5*SPRITE_SIZE_Y ),dtype=np.int64 )
-                           #}
-            #print( start_coords.dtype,coord_offset[pc.direction].dtype )
-            #start_coords += coord_offset[ pc.direction ]
-        #self.pc = pc
         pc.position = start_coords
         self.screen = pygame.display.set_mode( self.map.surface.get_size() )
         self.target_motion = np.array( ( 0,0 ) )
